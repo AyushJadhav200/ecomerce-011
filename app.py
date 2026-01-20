@@ -7,6 +7,7 @@ from authlib.integrations.flask_client import OAuth
 from dotenv import load_dotenv
 import razorpay
 import os
+import threading
 
 # Load environment variables
 load_dotenv()
@@ -81,42 +82,47 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+def send_async_email(app, msg):
+    with app.app_context():
+        try:
+            mail.send(msg)
+        except Exception as e:
+            print(f"Async email error: {e}")
+
 def send_otp_email(to_email, otp):
-    try:
-        msg = Message('Your Verification Code - Swara\'s Fashion', 
-                      sender=app.config['MAIL_USERNAME'], 
-                      recipients=[to_email])
+    msg = Message('Your Verification Code - Swara\'s Fashion', 
+                  sender=app.config['MAIL_USERNAME'], 
+                  recipients=[to_email])
+    
+    # Professional HTML Email Template (same as before)
+    msg.html = f"""
+    <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+        <div style="text-align: center; padding-bottom: 20px;">
+            <h1 style="color: #c19a33; margin: 0; font-size: 24px; letter-spacing: -0.5px;">Swara's Fashion</h1>
+            <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Luxury Ethnic Wear</p>
+        </div>
         
-        # Professional HTML Email Template
-        msg.html = f"""
-        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-            <div style="text-align: center; padding-bottom: 20px;">
-                <h1 style="color: #c19a33; margin: 0; font-size: 24px; letter-spacing: -0.5px;">Swara's Fashion</h1>
-                <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Luxury Ethnic Wear</p>
-            </div>
+        <div style="padding: 24px; background-color: #f8fafc; border-radius: 8px; text-align: center;">
+            <h2 style="color: #1e293b; margin-top: 0; font-size: 18px;">Your Verification Code</h2>
+            <p style="color: #475569; font-size: 15px; line-height: 1.5;">Please use the following 6-digit code to verify your account or reset your password. This code is valid for 10 minutes.</p>
             
-            <div style="padding: 24px; background-color: #f8fafc; border-radius: 8px; text-align: center;">
-                <h2 style="color: #1e293b; margin-top: 0; font-size: 18px;">Your Verification Code</h2>
-                <p style="color: #475569; font-size: 15px; line-height: 1.5;">Please use the following 6-digit code to verify your account or reset your password. This code is valid for 10 minutes.</p>
-                
-                <div style="margin: 24px 0; padding: 16px; background-color: white; border: 2px dashed #c19a33; border-radius: 8px; display: inline-block;">
-                    <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #c19a33;">{otp}</span>
-                </div>
-            </div>
-            
-            <div style="margin-top: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
-                <p>If you didn't request this code, you can safely ignore this email.</p>
-                <p style="margin-top: 12px;">© 2026 Swara's Fashion. All rights reserved.</p>
+            <div style="margin: 24px 0; padding: 16px; background-color: white; border: 2px dashed #c19a33; border-radius: 8px; display: inline-block;">
+                <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #c19a33;">{otp}</span>
             </div>
         </div>
-        """
-        msg.body = f"Your Verification Code is: {otp}" # Fallback for non-HTML emails
         
-        mail.send(msg)
-        return True
-    except Exception as e:
-        print(f"Error sending email: {e}")
-        return False
+        <div style="margin-top: 24px; text-align: center; color: #94a3b8; font-size: 12px;">
+            <p>If you didn't request this code, you can safely ignore this email.</p>
+            <p style="margin-top: 12px;">© 2026 Swara's Fashion. All rights reserved.</p>
+        </div>
+    </div>
+    """
+    msg.body = f"Your Verification Code is: {otp}"
+    
+    # Start thread to send email without blocking
+    thread = threading.Thread(target=send_async_email, args=(app, msg))
+    thread.start()
+    return True
 
 
 @login_manager.user_loader
