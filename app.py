@@ -185,25 +185,38 @@ class Product(db.Model):
 
 # Initial Data Seeder
 def seed_products():
-    if Product.query.count() == 0:
-        products = [
-            Product(name="Royal Silk Emerald", price=4999, image="../static/images/product1.png"),
-            Product(name="Crimson Velvet", price=5499, image="../static/images/product1.png"),
-            Product(name="Midnight Azure", price=4599, image="../static/images/product1.png"),
-            Product(name="Sunrise Gold", price=5999, image="../static/images/product1.png"),
-            Product(name="Rose Petal", price=5299, image="../static/images/product1.png"),
-            Product(name="Lavender Dream", price=4899, image="../static/images/product1.png"),
-            # Extended Catalog
-            Product(name="Ivory Classic", price=4299, image="../static/images/product1.png"),
-            Product(name="Sapphire Night", price=5199, image="../static/images/product1.png"),
-            Product(name="Ruby Elegance", price=5699, image="../static/images/product1.png"),
-            Product(name="Amethyst Glow", price=4799, image="../static/images/product1.png"),
-            Product(name="Coral Breeze", price=4499, image="../static/images/product1.png"),
-            Product(name="Jade Garden", price=4999, image="../static/images/product1.png"),
-        ]
-        db.session.bulk_save_objects(products)
-        db.session.commit()
-        print("Products seeded.")
+    if Product.query.first():
+        return
+    
+    products = [
+        Product(name="Royal Silk Emerald", price=4999, image="../static/images/product1.png"),
+        Product(name="Crimson Velvet", price=5499, image="../static/images/product1.png"),
+        Product(name="Midnight Azure", price=4599, image="../static/images/product1.png"),
+        Product(name="Sunrise Gold", price=5999, image="../static/images/product1.png"),
+        Product(name="Rose Petal", price=5299, image="../static/images/product1.png"),
+        Product(name="Lavender Dream", price=4899, image="../static/images/product1.png"),
+        Product(name="Ivory Classic", price=4299, image="../static/images/product1.png"),
+        Product(name="Sapphire Night", price=5199, image="../static/images/product1.png"),
+        Product(name="Ruby Elegance", price=5699, image="../static/images/product1.png"),
+        Product(name="Amethyst Glow", price=4799, image="../static/images/product1.png"),
+        Product(name="Coral Breeze", price=4499, image="../static/images/product1.png"),
+        Product(name="Jade Garden", price=4999, image="../static/images/product1.png"),
+    ]
+    db.session.bulk_save_objects(products)
+    db.session.commit()
+    print("Products seeded successfully.")
+
+# Database initialization
+with app.app_context():
+    try:
+        db.create_all()
+        seed_products()
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+
+@app.route('/health')
+def health_check():
+    return jsonify({'status': 'healthy'}), 200
 
 @app.route('/')
 def home():
@@ -826,8 +839,5 @@ def verify_cashfree_payment():
 
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        seed_products()
     app.run(debug=True, port=5000)
 
